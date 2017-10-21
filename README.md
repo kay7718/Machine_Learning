@@ -9,3 +9,4 @@
 + 20171001 KNN SVM <br>
 + 20171008 NaiveBayes & Decision Tree <br>
 + 20171014 Random Forest&Evaluating<br>
++ 20171021 Kmeans & Hirerarchical<br>
