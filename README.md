@@ -10,3 +10,4 @@
 + 20171008 NaiveBayes & Decision Tree <br>
 + 20171014 Random Forest&Evaluating<br>
 + 20171021 Kmeans & Hirerarchical<br>
++ 20171028 Association Rule<br>
