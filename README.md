@@ -7,7 +7,7 @@
 [Decision Tree Regression](https://github.com/kay7718/Machine_Learning/blob/master/20170916%20SVR_Decision%20Tree_Random%20Forest/Machine%20Learning-Decision%20Tree%20Regression.pdf) & 
 [Random Forest Regression](https://github.com/kay7718/Machine_Learning/blob/master/20170916%20SVR_Decision%20Tree_Random%20Forest/Machine%20Learning-Random%20Forest%20Regression.pdf) <br>
                [從零開始基於樹的建模完整教學](https://kknews.cc/news/rgmb3x.html)<br>
-+ 20170923 Logistic Regressionr <br>
++ 20170923 [Logistic Regression](https://github.com/kay7718/Machine_Learning/tree/master/20170923%20Logistic%20Regressionr) <br>
 + 20171001 KNN SVM <br>
 + 20171008 NaiveBayes & Decision Tree <br>
 + 20171014 Random Forest&Evaluating<br>
