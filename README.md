@@ -15,3 +15,6 @@
 + 20171028 Association Rule<br>
 + 20171104 Upper Confindence Bound UCB<br>
 + 20171111 Thompson Sampling<br>
++ 20171118 Natural Language Processing<br>
+[深度學習優化方法比較](https://zhuanlan.zhihu.com/p/22252270)<br>
++ 20171125 Deep Learning - Artificial Neural Networks<br>
