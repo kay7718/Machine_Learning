@@ -19,4 +19,5 @@
 [深度學習優化方法比較](https://zhuanlan.zhihu.com/p/22252270)<br>
 + 20171125 Deep Learning - Artificial Neural Networks<br>
 + 20171202 [Convolutional Neural Networks](https://github.com/kay7718/Machine_Learning/blob/master/20171202%20CNN/Convolutional%20Neural%20Networks.ipynb)<br>
-[捲積神經網路參考](https://brohrer.mcknote.com/zh-Hant/how_machine_learning_works/how_convolutional_neural_networks_work.html)<br>
+[捲積神經網路參考1](https://brohrer.mcknote.com/zh-Hant/how_machine_learning_works/how_convolutional_neural_networks_work.html)<br>
+[捲積神經網路參考2](http://www.bijishequ.com/detail/462676)<br>
