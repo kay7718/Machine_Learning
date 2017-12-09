@@ -22,3 +22,4 @@
 [捲積神經網路參考1](https://brohrer.mcknote.com/zh-Hant/how_machine_learning_works/how_convolutional_neural_networks_work.html)<br>
 [捲積神經網路參考2](http://www.bijishequ.com/detail/462676)<br>
 [捲積神經網路參考3](https://ithelp.ithome.com.tw/articles/10187282)<br>
++ 20171209 [Dimensionality Reduction](https://github.com/kay7718/Machine_Learning/blob/master/20171209%20Dimensionality%20Reduction/20171208_ML_PCA%20LDA%20Kernel%20PCA.pdf)<BR>
