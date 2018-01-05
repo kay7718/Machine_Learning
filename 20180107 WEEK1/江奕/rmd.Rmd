@@ -1,0 +1,135 @@
+---
+title: "Hi"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(data.table)
+library(ggplot2)
+library(lubridate)
+library(magrittr)
+library(ggplot2)
+```
+
+```{r,echo=TRUE,eval=FALSE}
+library(data.table)
+library(ggplot2)
+library(lubridate)
+library(magrittr)
+library(ggplot2)
+```
+
+
+### selectrow:定義篩選變數
+### select = selectrow 篩選變數 showProgress = F 不顯示讀取進度
+```{r,echo=TRUE,eval=TRUE}
+selectrow <- c("fecha_dato","fecha_alta","pais_residencia") 
+train <- fread("D:/data/train_ver2.csv",select = selectrow,showProgress =F) 
+```
+
+```{r,echo=TRUE,eval=TRUE}
+train %>% head
+# 轉換成日期格式
+train$fecha_dato <- ymd(train$fecha_dato) 
+train$fecha_alta <- ymd(train$fecha_alta)
+# 增加年份
+train$year_dato <- year(train$fecha_dato) 
+train$year_alta <- year(train$fecha_alta)
+# 增加月份
+train$month_dato <- month(train$fecha_dato,label=T) 
+train$month_alta <- month(train$fecha_alta,label=T)
+# 增加週
+train$weekday_alta <- wday(train$fecha_alta,label=T)
+# 將data.frame 轉換成data.table格式
+train<-as.data.table(train)
+train %>% head
+```
+
+### 取消科學符號
+```{r,echo=TRUE,eval=TRUE}
+options(scipen=999)
+```
+
+### 每年每月所擁有的產品
+### fecha_alta 成為客戶的時間
+```{r,echo=TRUE,eval=TRUE}
+ggplot(train[,.N,by=.(month_dato,year_dato)],aes(x = month_dato,y=N,fill=month_dato))+
+  geom_bar(stat="identity")+ggtitle("Number of products by month and year")+
+  facet_wrap(~year_dato)
+
+```
+
+### 以weekday_alta分組計算
+```{r,echo=TRUE,eval=TRUE}
+train[,.N,by=weekday_alta]
+ggplot(train[,.N,by=weekday_alta],aes(x = weekday_alta,y = N,fill=weekday_alta))+
+  geom_bar(stat="identity")+ggtitle("Number of customers that became 'first holder' by day of week")
+```
+
+### 抓取year_alta>2014年後的資料，並以month_alta、weekday_alta分組計算
+```{r,echo=TRUE,eval=TRUE}
+ggplot(train[year_alta>2009,.N,by=.(month_alta,year_alta)],aes(x = month_alta,y=N,fill=month_alta))+
+  geom_bar(stat="identity")+ggtitle("Number of customers that became 'first holder' by month and year")+
+  facet_grid(year_alta~.)
+
+```
+
+### 畫出顧客所在位置
+```{r,echo=TRUE,eval=TRUE ,warning=FALSE}
+library(rworldmap)
+pais <- train[,.N,by=pais_residencia] # Number of customers by country
+
+fr <- joinCountryData2Map(dF = pais,joinCode = "ISO2",nameJoinColumn = "pais_residencia",verbose=F) # Prepare data to plot
+
+mapCountryData(mapToPlot = fr,nameColumnToPlot = "N",catMethod = "logFixedWidth",
+               oceanCol = "steelblue1",missingCountryCol = "white",
+               mapTitle = "Number of customers by country",
+               aspect = "variable") # Plot Worlmap
+```
+
+```{r,echo=TRUE,eval=TRUE ,warning=FALSE}
+rm(list = ls())
+selectrow <- c("ind_empleado","renta")
+train <- fread("D:/data/train_ver2.csv",select = selectrow,showProgress = F)
+train <- train[!is.na(train$renta)]
+ggplot(train,aes(x = ind_empleado,y = renta,fill=ind_empleado))+
+  ggtitle("Gross income of the household by Employee index")+
+  geom_boxplot(na.rm=TRUE)+scale_y_log10()+
+  scale_fill_discrete(name = "Employee index",labels = c("Active", "Ex employed","filial","Not employee","Pasive"))
+
+```
+
+```{r,echo=TRUE,eval=TRUE ,warning=FALSE}
+rm(list = ls())
+selectrow <- c("segmento","renta")
+train <- fread("D:/data/train_ver2.csv",select = selectrow,showProgress = F)
+train <- train[!is.na(train$renta)]
+ggplot(train,aes(x = segmento,y = renta,fill=segmento))+
+  ggtitle("Gross income of the household by segmentation")+
+  geom_boxplot(na.rm=TRUE)+scale_y_log10()
+
+```
+
+```{r,echo=TRUE,eval=TRUE ,warning=FALSE}
+rm(list = ls())
+selectrow <- c("segmento","renta")
+train <- fread("D:/data/train_ver2.csv",select = selectrow,showProgress = F)
+train <- train[!is.na(train$renta)]
+t.test(x = train[segmento=="02 - PARTICULARES",renta],y =train[segmento=="03 - UNIVERSITARIO",renta],alternative = "greater")
+
+```
+
+```{r,echo=TRUE,eval=TRUE ,warning=FALSE}
+rm(list = ls())
+selectrow <- c("age","ncodpers")
+train <- fread("D:/data/train_ver2.csv",select = selectrow,nrows = 1000000,showProgress = F)
+ggplot(train[age<118,.("age"=mean(age,na.rm = T)),by=ncodpers],aes(age))+
+  stat_count()+ggtitle("Number of persons by age") 
+
+summary(train[,age])
+
+
+```
+
+
