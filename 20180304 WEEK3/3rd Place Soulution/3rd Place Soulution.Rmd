@@ -22,7 +22,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 2.總共使用了142個特徵變數，分成幾個部分：<br>
   (1) 18個原始特徵變數：排除了fecha_dato(資料年月)，ncodpers(客代)，fecha_alta，ult_fec_cli_1t，tipodom(地址類型)和cod_prov(洲代碼)。<br>
-  (2) 2個串聯(concatenation)欄位，當月與前一個月串聯：ind_actividad_cliente(是否活躍)、tiprel_1mes。
+  (2) 2個串聯(concatenation)欄位，當月與前一個月串聯：ind_actividad_cliente(是否活躍)、tiprel_1mes。<br>
   (3) 20個特徵：20個商品**上個月**的持有狀況。<br>
   (4) 1個串聯(concatenation)欄位：將上個月的20個商品串成一個字元。<br>
   (5) 1個特徵：上個月20個商品購買的數量。<br>
@@ -46,7 +46,9 @@ library(xgboost)
 ## 1_make_data_v3
 
 ```{r, message=FALSE}
-#先排除沒有使用的變數fecha_alta,ult_fec_cli_1t,tipodom,cod_prov，還有四個使用固定預測機率為1^-10的商品(ind_ahor_fin_ult1,ind_aval_fin_ult1,ind_deco_fin_ult1,ind_deme_fin_ult1)也進行排除，並強制indrel_1mes、conyuemp為字元。
+#先排除沒有使用的變數fecha_alta,ult_fec_cli_1t,tipodom,cod_prov。
+#還有四個使用固定預測機率為1^-10的商品(ind_ahor_fin_ult1,ind_aval_fin_ult1,ind_deco_fin_ult1,ind_deme_fin_ult1)也進行排除。
+#並強制indrel_1mes、conyuemp為字元。
 data <- fread("C:/Users/aa006/Desktop/3rd Place Soulution/train_ver2.csv", drop=c(7,11,19,20,25,26,34,35), colClasses=c(indrel_1mes="character", conyuemp="character"))
 
 
@@ -378,7 +380,7 @@ submission <- fread("C:/Users/aa006/Desktop/3rd Place Soulution/sample_submissio
 
 result <- data.table()
 for(i in 1:length(date.list)) {
-  print(date.list[i])
+ # print(date.list[i])
   #將每個客戶的每個商品的預測值整理在一起
   result.temp <- data.table()
   for(j in 1:length(product.list)) {
@@ -419,7 +421,7 @@ result$log_pr <- result$log_pr / result$N
 # elect top 7 products
 result <- result[order(ncodpers, -log_pr)]
 for(i in 1:7) {
-  print(i)
+  #print(i)
   temp <- result[!duplicated(result, by="ncodpers"), .(ncodpers, product)]
   submission <- merge(submission, temp, by="ncodpers", all.x=TRUE)
   result <- result[duplicated(result, by="ncodpers"), .(ncodpers, product)]

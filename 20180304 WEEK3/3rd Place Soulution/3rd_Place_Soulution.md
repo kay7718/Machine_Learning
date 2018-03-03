@@ -10,7 +10,7 @@ KAGGLE競賽
 
 先進行簡單說明匯總：<br> 1.將要預測的24項商品分成三類：<br> (1)將只有少數人持有的商品(ind\_ahor\_fin\_ult1, ind\_aval\_fin\_ult1, ind\_deco\_fin\_ult1 and ind\_deme\_fin\_ult1)給定固定機率值**1^-10**。<br> (2)使用固定月份進行預測：ind\_cco\_fin\_ult1僅用2015-12-28的資料進行預測、ind\_reca\_fin\_ult1僅用2015-06-28的資料進行預測。<br> (3)其他18項商品分別預測2016-05-28, 2016-04-28, 2016-03-28, 2016-02-28, 2016-01-28和 2015-12-28這六個月，但後面跑XGBoost其實只有用到**2016-05-28**，並且在預測的部分，僅使用該月新持有該產品的客戶。<br> ![](overview.png)
 
-2.總共使用了142個特徵變數，分成幾個部分：<br> (1) 18個原始特徵變數：排除了fecha\_dato(資料年月)，ncodpers(客代)，fecha\_alta，ult\_fec\_cli\_1t，tipodom(地址類型)和cod\_prov(洲代碼)。<br> (2) 2個串聯(concatenation)欄位，當月與前一個月串聯：ind\_actividad\_cliente(是否活躍)、tiprel\_1mes。 (3) 20個特徵：20個商品**上個月**的持有狀況。<br> (4) 1個串聯(concatenation)欄位：將上個月的20個商品串成一個字元。<br> (5) 1個特徵：上個月20個商品購買的數量。<br> (6) 80個特徵：20個商品從最初到預測前一個月index狀態變更的計數(count)，共4種狀態變更\*20個商品。<br> (7) 20個特徵：20個商品直到預測前一個月時連續未持有的月份數。<br>
+2.總共使用了142個特徵變數，分成幾個部分：<br> (1) 18個原始特徵變數：排除了fecha\_dato(資料年月)，ncodpers(客代)，fecha\_alta，ult\_fec\_cli\_1t，tipodom(地址類型)和cod\_prov(洲代碼)。<br> (2) 2個串聯(concatenation)欄位，當月與前一個月串聯：ind\_actividad\_cliente(是否活躍)、tiprel\_1mes。<br> (3) 20個特徵：20個商品**上個月**的持有狀況。<br> (4) 1個串聯(concatenation)欄位：將上個月的20個商品串成一個字元。<br> (5) 1個特徵：上個月20個商品購買的數量。<br> (6) 80個特徵：20個商品從最初到預測前一個月index狀態變更的計數(count)，共4種狀態變更\*20個商品。<br> (7) 20個特徵：20個商品直到預測前一個月時連續未持有的月份數。<br>
 
 名詞解釋：<br> 1. 串聯(concatenation)：將某一個特徵變數這個月與前一個月用串聯的方式合併再一起。例如：如果某個月的“tiprel\_1mes”=“A”，而上個月的“tiprel\_1mes”=“I”，則它們的串聯後為新特徵為"AI"。<br> 2. index狀態變更：0to0(前次無持有到這次無持有)，0to1(前次無持有到這次持有)，1to0(前次持有到這次無持有)和1to1(前次持有到這次持有)。<br>
 
@@ -31,57 +31,45 @@ library(xgboost)
 -----------------
 
 ``` r
-#先排除沒有使用的變數fecha_alta,ult_fec_cli_1t,tipodom,cod_prov，還有四個使用固定預測機率為1^-10的商品(ind_ahor_fin_ult1,ind_aval_fin_ult1,ind_deco_fin_ult1,ind_deme_fin_ult1)也進行排除，並強制indrel_1mes、conyuemp為字元。
+#先排除沒有使用的變數fecha_alta,ult_fec_cli_1t,tipodom,cod_prov。
+#還有四個使用固定預測機率為1^-10的商品(ind_ahor_fin_ult1,ind_aval_fin_ult1,ind_deco_fin_ult1,ind_deme_fin_ult1)也進行排除。
+#並強制indrel_1mes、conyuemp為字元。
 data <- fread("C:/Users/aa006/Desktop/3rd Place Soulution/train_ver2.csv", drop=c(7,11,19,20,25,26,34,35), colClasses=c(indrel_1mes="character", conyuemp="character"))
 ```
 
     ## 
     Read 0.0% of 13647309 rows
-    Read 2.2% of 13647309 rows
-    Read 4.5% of 13647309 rows
-    Read 6.7% of 13647309 rows
-    Read 9.0% of 13647309 rows
-    Read 11.4% of 13647309 rows
-    Read 13.6% of 13647309 rows
-    Read 15.7% of 13647309 rows
-    Read 18.0% of 13647309 rows
-    Read 20.2% of 13647309 rows
-    Read 22.3% of 13647309 rows
-    Read 24.7% of 13647309 rows
-    Read 27.0% of 13647309 rows
-    Read 29.3% of 13647309 rows
-    Read 31.5% of 13647309 rows
-    Read 33.7% of 13647309 rows
-    Read 35.6% of 13647309 rows
-    Read 38.0% of 13647309 rows
-    Read 40.2% of 13647309 rows
+    Read 3.3% of 13647309 rows
+    Read 6.5% of 13647309 rows
+    Read 9.8% of 13647309 rows
+    Read 13.0% of 13647309 rows
+    Read 16.3% of 13647309 rows
+    Read 19.6% of 13647309 rows
+    Read 22.9% of 13647309 rows
+    Read 26.2% of 13647309 rows
+    Read 29.5% of 13647309 rows
+    Read 32.7% of 13647309 rows
+    Read 36.0% of 13647309 rows
+    Read 39.3% of 13647309 rows
     Read 42.6% of 13647309 rows
-    Read 44.7% of 13647309 rows
-    Read 46.3% of 13647309 rows
-    Read 48.4% of 13647309 rows
-    Read 50.8% of 13647309 rows
-    Read 53.2% of 13647309 rows
-    Read 55.6% of 13647309 rows
-    Read 57.9% of 13647309 rows
-    Read 59.9% of 13647309 rows
-    Read 62.1% of 13647309 rows
-    Read 64.3% of 13647309 rows
-    Read 66.5% of 13647309 rows
-    Read 68.1% of 13647309 rows
-    Read 70.5% of 13647309 rows
-    Read 72.8% of 13647309 rows
-    Read 75.3% of 13647309 rows
-    Read 78.0% of 13647309 rows
-    Read 81.2% of 13647309 rows
-    Read 83.8% of 13647309 rows
-    Read 86.4% of 13647309 rows
-    Read 88.5% of 13647309 rows
-    Read 90.6% of 13647309 rows
-    Read 92.5% of 13647309 rows
-    Read 94.9% of 13647309 rows
-    Read 97.2% of 13647309 rows
-    Read 99.7% of 13647309 rows
-    Read 13647309 rows and 40 (of 48) columns from 2.135 GB file in 00:00:59
+    Read 45.9% of 13647309 rows
+    Read 49.3% of 13647309 rows
+    Read 52.2% of 13647309 rows
+    Read 55.3% of 13647309 rows
+    Read 58.5% of 13647309 rows
+    Read 61.7% of 13647309 rows
+    Read 64.8% of 13647309 rows
+    Read 68.3% of 13647309 rows
+    Read 71.7% of 13647309 rows
+    Read 75.1% of 13647309 rows
+    Read 78.4% of 13647309 rows
+    Read 81.8% of 13647309 rows
+    Read 85.2% of 13647309 rows
+    Read 88.6% of 13647309 rows
+    Read 91.8% of 13647309 rows
+    Read 95.2% of 13647309 rows
+    Read 98.6% of 13647309 rows
+    Read 13647309 rows and 40 (of 48) columns from 2.135 GB file in 00:00:43
 
 ``` r
 #取資料的年月出來，並去重複+加上要預測的"2016-06-28"進來。
@@ -138,8 +126,8 @@ data1 <-fread("C:/Users/aa006/Desktop/3rd Place Soulution/train_2016-05-28.csv",
 ```
 
     ## 
-    Read 34.5% of 926663 rows
-    Read 71.2% of 926663 rows
+    Read 45.3% of 926663 rows
+    Read 83.1% of 926663 rows
     Read 926663 rows and 62 (of 62) columns from 0.174 GB file in 00:00:04
 
 ``` r
@@ -321,12 +309,11 @@ data2 <-fread("C:/Users/aa006/Desktop/3rd Place Soulution/count_2016-05-28.csv",
 ```
 
     ## 
-    Read 23.7% of 926663 rows
-    Read 42.1% of 926663 rows
-    Read 59.4% of 926663 rows
-    Read 78.8% of 926663 rows
-    Read 99.3% of 926663 rows
-    Read 926663 rows and 100 (of 100) columns from 0.199 GB file in 00:00:07
+    Read 25.9% of 926663 rows
+    Read 47.5% of 926663 rows
+    Read 69.1% of 926663 rows
+    Read 93.9% of 926663 rows
+    Read 926663 rows and 100 (of 100) columns from 0.199 GB file in 00:00:06
 
 ``` r
 select(filter(data,ncodpers==15889), fecha_dato,ncodpers,ind_cco_fin_ult1)
@@ -803,36 +790,32 @@ for(product in product.list) {
 ```
 
     ## 
-    Read 44.2% of 904294 rows
-    Read 78.5% of 904294 rows
+    Read 48.7% of 904294 rows
+    Read 87.4% of 904294 rows
     Read 904294 rows and 62 (of 62) columns from 0.170 GB file in 00:00:04
     ## 
-    Read 27.6% of 904294 rows
-    Read 52.0% of 904294 rows
-    Read 75.2% of 904294 rows
-    Read 99.5% of 904294 rows
-    Read 904294 rows and 100 (of 100) columns from 0.191 GB file in 00:00:06
+    Read 33.2% of 904294 rows
+    Read 58.6% of 904294 rows
+    Read 80.7% of 904294 rows
+    Read 904294 rows and 100 (of 100) columns from 0.191 GB file in 00:00:05
     ## 
-    Read 16.2% of 926663 rows
-    Read 43.2% of 926663 rows
-    Read 71.2% of 926663 rows
-    Read 926663 rows and 62 (of 62) columns from 0.174 GB file in 00:00:05
-    ## 
-    Read 19.4% of 926663 rows
     Read 36.7% of 926663 rows
-    Read 54.0% of 926663 rows
-    Read 74.5% of 926663 rows
-    Read 95.0% of 926663 rows
-    Read 926663 rows and 100 (of 100) columns from 0.199 GB file in 00:00:07
+    Read 65.8% of 926663 rows
+    Read 926663 rows and 62 (of 62) columns from 0.174 GB file in 00:00:04
     ## 
-    Read 48.4% of 929615 rows
-    Read 83.9% of 929615 rows
-    Read 929615 rows and 42 (of 42) columns from 0.139 GB file in 00:00:04
+    Read 25.9% of 926663 rows
+    Read 50.7% of 926663 rows
+    Read 72.3% of 926663 rows
+    Read 93.9% of 926663 rows
+    Read 926663 rows and 100 (of 100) columns from 0.199 GB file in 00:00:06
     ## 
-    Read 24.7% of 929615 rows
-    Read 45.2% of 929615 rows
     Read 68.8% of 929615 rows
-    Read 94.7% of 929615 rows
+    Read 929615 rows and 42 (of 42) columns from 0.139 GB file in 00:00:03
+    ## 
+    Read 28.0% of 929615 rows
+    Read 50.6% of 929615 rows
+    Read 74.2% of 929615 rows
+    Read 97.9% of 929615 rows
     Read 929615 rows and 100 (of 100) columns from 0.203 GB file in 00:00:06
     ## [1]  train-auc:0.930297  val-auc:0.883715 
     ## Multiple eval metrics are present. Will use val_auc for early stopping.
@@ -909,7 +892,7 @@ submission <- fread("C:/Users/aa006/Desktop/3rd Place Soulution/sample_submissio
 
 result <- data.table()
 for(i in 1:length(date.list)) {
-  print(date.list[i])
+ # print(date.list[i])
   #將每個客戶的每個商品的預測值整理在一起
   result.temp <- data.table()
   for(j in 1:length(product.list)) {
@@ -942,11 +925,7 @@ for(i in 1:length(date.list)) {
   result <- rbind(result, result.temp[, .(ncodpers, product, log_pr, N=1)])
   result <- result[, .(log_pr=sum(log_pr), N=sum(N)), by=.(ncodpers, product)]
 }
-```
 
-    ## [1] "2016-05-28"
-
-``` r
 # log-average 如果有預測多個月份的值因為加總時同一項商品有多個分數，所以要除以月份數。
 result$log_pr <- result$log_pr / result$N
 #--------------------------
@@ -954,7 +933,7 @@ result$log_pr <- result$log_pr / result$N
 # elect top 7 products
 result <- result[order(ncodpers, -log_pr)]
 for(i in 1:7) {
-  print(i)
+  #print(i)
   temp <- result[!duplicated(result, by="ncodpers"), .(ncodpers, product)]
   submission <- merge(submission, temp, by="ncodpers", all.x=TRUE)
   result <- result[duplicated(result, by="ncodpers"), .(ncodpers, product)]
@@ -963,17 +942,6 @@ for(i in 1:7) {
     break
   }
 }
-```
-
-    ## [1] 1
-    ## [1] 2
-    ## [1] 3
-    ## [1] 4
-    ## [1] 5
-    ## [1] 6
-    ## [1] 7
-
-``` r
 #上面是客代加七個商品欄位，現在把欄位名稱改成added_products，並且把商品名稱都黏在一起
 submission[is.na(submission)] <- ""
 submission$added_products <- submission[[paste0("p",1)]]
