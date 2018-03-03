@@ -47,67 +47,97 @@ library(xgboost)
 
 ```{r, message=FALSE}
 data <- fread("C:/Users/aa006/Desktop/3rd Place Soulution/train_ver2.csv", drop=c(7,11,19,20,25,26,34,35), colClasses=c(indrel_1mes="character", conyuemp="character"))
+
+#先排除沒有使用的變數fecha_alta,ult_fec_cli_1t,tipodom,cod_prov，還有四個使用固定預測機率為1^-10的商品(ind_ahor_fin_ult1,ind_aval_fin_ult1,ind_deco_fin_ult1,ind_deme_fin_ult1)也進行排除，並強制indrel_1mes、conyuemp為字元。
+
 date.list <- c(unique(data$fecha_dato), "2016-06-28")
 print(date.list)
+
+#取資料的年月出來，並去重複+加上要預測的"2016-06-28"進來。
+
 product.list <- colnames(data)[(ncol(data)-19):ncol(data)]
 print(product.list)
-```
 
-1. 先排除沒有使用的變數fecha_alta, ult_fec_cli_1t, tipodom,cod_prov，還有四個使用固定預測機率為1^-10的商品(ind_ahor_fin_ult1, ind_aval_fin_ult1, ind_deco_fin_ult1, ind_deme_fin_ult1)也進行排除，並強制indrel_1mes、conyuemp為字元。<br>
-2. 取資料的年月出來，並去重複+加上要預測的"2016-06-28"進來。<br>
-3. 將商品列表出來 colnames商品名稱，ncol欄位數，因為商品的部分是從後面數過來順序排列，所以直接取最後的20欄。<br>
+#將商品列表出來 colnames商品名稱，ncol欄位數，因為商品的部分是從後面數過來順序排列，所以直接取最後的20欄。
+```
 
 ```{r, message=FALSE}
 ##### data 1: inner join with last month #####
-#P.S.1
+# i取6,12,13,14,15,16,17,18，表示在這迴圈中處理這幾個月，"2015-06-28" "2015-12-28" "2016-01-28" "2016-02-28" "2016-03-28" "2016-04-28" "2016-05-28" "2016-06-28"這幾個月的資料。
+
 #for(i in c(6,12:length(date.list))) {
+
 for(i in c(17:length(date.list))) {
-  print(date.list[i])
-#P.S.2
+  
+  #print(date.list[i])
+#除了最後一個要預測的月份，根據客代去merge前一個月的值，取出前一個月的ind_actividad_cliente(是否活躍)、tiprel_1mes(月初的客戶關係類型)、20項商品這些欄位並且加上_last的后綴。
+  
   if(date.list[i] != "2016-06-28") {
     out <- data[fecha_dato==date.list[i]]
     out <- merge(out, data[fecha_dato==date.list[i-1], c("ncodpers","tiprel_1mes","ind_actividad_cliente",product.list), with=FALSE], by="ncodpers", suffixes=c("","_last"))
     #write.csv(out, paste0("train_", date.list[i], ".csv"), row.names=FALSE)
   } else {
-#P.S.3
+    
+#最後要預測的月份，利用test資料集，排除沒有使用的變數fecha_alta, ult_fec_cli_1t, tipodom, cod_prov，後照上面一樣的處理方式，差別在不同的資料來源。
+    
     out <- fread("C:/Users/aa006/Desktop/3rd Place Soulution/test_ver2.csv", drop=c(7,11,19,20), colClasses=c(indrel_1mes="character", conyuemp="character"))
     out <- merge(out, data[fecha_dato==date.list[i-1], c("ncodpers","tiprel_1mes","ind_actividad_cliente",product.list), with=FALSE], by="ncodpers", suffixes=c("","_last"))
     colnames(out)[(ncol(out)-19):ncol(out)] <- paste0(colnames(out)[(ncol(out)-19):ncol(out)], "_last")
     #write.csv(out, paste0("test_", date.list[i], ".csv"), row.names=FALSE)
   }
 }
+
 data1 <-fread("C:/Users/aa006/Desktop/3rd Place Soulution/train_2016-05-28.csv", header = T)
 head(data1)
+
+#前一個月份的相關變數處理。
 ```
-P.S.1 i取6,12,13,14,15,16,17,18，表示在這迴圈中處理這幾個月，"2015-06-28" "2015-12-28" "2016-01-28" "2016-02-28" "2016-03-28" "2016-04-28" "2016-05-28" "2016-06-28"這幾個月的資料。<br>
-P.S.2 除了最後一個要預測的月份，根據客代去merge前一個月的值，取出前一個月的ind_actividad_cliente(是否活躍)、tiprel_1mes(月初的客戶關係類型)、20項商品這些欄位並且加上_last的后綴。<br>
-P.S.3 最後要預測的月份，利用test資料集，排除沒有使用的變數fecha_alta, ult_fec_cli_1t, tipodom, cod_prov，後照上面一樣的處理方式，差別在不同的資料來源。<br>
+
 
 
 ```{r, message=FALSE}
 ##### data 2: count the change of index #####
-#P.S.4
 #for(i in c(6,12:length(date.list))) {
 for(i in c(17:length(date.list))) {
-  print(date.list[i])
+  
+  #print(date.list[i])
+#if取出當月與前一個月的客代相同的客代，除了最後一個要預測的月份，根據客代去merge前一個月的客代，要預測的月份則是利用test資料集，取客代出來。 
+  
   if(date.list[i] != "2016-06-28") {
     out <- merge(data[fecha_dato==date.list[i], .(ncodpers)], data[fecha_dato==date.list[i-1], .(ncodpers)], by="ncodpers")
   } else {
     out <- fread("C:/Users/aa006/Desktop/3rd Place Soulution/test_ver2.csv", select=2)
   }
-#P.S.5  
+
   for(product in product.list) {
-    print(product)
+    
+    #print(product)
+#找出前一個月以前到最初(1~i-1)的月份、客代、產品。
+    
     temp <- data[fecha_dato %in% date.list[1:(i-1)], c("fecha_dato","ncodpers",product), with=FALSE]
+
+#根據客代 、年月的順序排序。
+    
     temp <- temp[order(ncodpers, fecha_dato)]
+    
+#根據該期與該期減一期去看持有某一項產品的狀態，分成四個欄位(00，01，10，11)，給定TURE、FALSE。  
+    
     temp$n00 <- temp$ncodpers==lag(temp$ncodpers) & lag(temp[[product]])==0 & temp[[product]]==0
     temp$n01 <- temp$ncodpers==lag(temp$ncodpers) & lag(temp[[product]])==0 & temp[[product]]==1
     temp$n10 <- temp$ncodpers==lag(temp$ncodpers) & lag(temp[[product]])==1 & temp[[product]]==0
     temp$n11 <- temp$ncodpers==lag(temp$ncodpers) & lag(temp[[product]])==1 & temp[[product]]==1
+    
+#因為每個客戶不是都從一開始就進來，所以要補0。
+    
     temp[is.na(temp)] <- 0
+    
+#根據客代分別加總四個狀態的值。
+    
     count <- temp[, .(sum(n00, na.rm=TRUE), sum(n01, na.rm=TRUE), sum(n10, na.rm=TRUE), sum(n11, na.rm=TRUE)), by=ncodpers]
     colnames(count)[2:5] <- paste0(product, c("_00","_01","_10","_11"))
-#P.S.6
+    
+#先加了一個_0len的欄位，裡面都先放0，再跑迴圈，計算出連續未持有的月份數。
+    
     count[[paste0(product,"_0len")]] <- 0
     for(date in date.list[1:(i-1)]) {
       temp2 <- temp[fecha_dato==date]
@@ -120,43 +150,28 @@ for(i in c(17:length(date.list))) {
   }
   #write.csv(out[, -1, with=FALSE], paste0("count_", date.list[i], ".csv"), quote=FALSE, row.names=FALSE)
 }
-data2 <-fread("C:/Users/aa006/Desktop/3rd Place Soulution/count_2016-05-28.csv", header = T)
-head(data2)
 ```
-P.S.4 (1) i取6,12,13,14,15,16,17,18，表示在這迴圈中處理這幾個月，"2015-06-28" "2015-12-28" "2016-01-28" "2016-02-28" "2016-03-28" "2016-04-28" "2016-05-28" "2016-06-28"這幾個月的資料。<br>
-    (2) if取出當月與前一個月的客代相同的客代，除了最後一個要預測的月份，根據客代去merge前一個月的客代，要預測的月份則是利用test資料集，取客代出來。<br>
-    
-P.S.5 (1)找出前一個月以前到最初(1~i-1)的月份、客代、產品。<br>
-    (2)根據客代 、年月的順序排序。<br>
-    (3)根據該期與該期減一期去看持有某一項產品的狀態，分成四個欄位(00，01，10，11)，給定TURE、FALSE。<br>
-    (4)因為每個客戶不是都從一開始就進來，所以要補0。<br>
-    (5)根據客代分別加總四個狀態的值。<br>
-    
-P.S.6 先加了一個_0len的欄位，裡面都先放0，再跑迴圈，計算出連續未持有的月份數。<br>
 
+```{r, message=FALSE}
+data2 <-fread("C:/Users/aa006/Desktop/3rd Place Soulution/count_2016-05-28.csv", header = T)
+select(filter(data,ncodpers==15889), fecha_dato,ncodpers,ind_cco_fin_ult1)
+select(data2[1],ind_cco_fin_ult1_00,ind_cco_fin_ult1_01,ind_cco_fin_ult1_10,ind_cco_fin_ult1_11,ind_cco_fin_ult1_0len)
+```
 
 ## 2_xgboost
-P.S.7 (1)"ind_cco_fin_ult1"只抓"2015-12-28"，"ind_reca_fin_ult1"只抓 "2015-06-28"剩下抓 "2016-05-28"。<br>
-    (2)當train.date= "2016-05-28"時，用2016-04-28作為驗證(val)，剩下的都用2016-05-28驗證(val)，2016-06-28測試(test)。<br>
-    
-P.S.8 (1)取出前一個月沒有購買的該產品的客戶。<br>
-    (2)ind_actividad_cliente_from_to，將前一個月與當月的ind_actividad_cliente(是否活躍)合在一起當變數(例如前一個月1，當月1 變成11)。<br>
-    (3)tiprel_1mes_from_to，將前一個月與當月的tiprel_1mes(月初的客戶關係類型)合在一起。<br>
-    (4)將ind_actividad_cliente_last、tiprel_1mes_last轉換為NULL，將變數移除。<br>
-    (5)n_products_last 找出前一個月20項商品的持有狀況，利用apply進行橫排(每一客戶)加總，但test欄位數有差異所以位置不一樣!!<br>
-    (6)$products_last先產生一個空欄位，再將前一個月的20個商品串成一串 例如(10000010000000010000)。<br>
-
 
 ```{r, message=FALSE}
 #選擇要進行預測的20項商品，為了怕跑太久，所以先跑其中一個作範例
 #product.list <- colnames(fread("C:/Users/aa006/Desktop/3rd Place Soulution/train_ver2.csv", select=25:48, nrows=0))[-c(1,2,10,11)]
+
 product.list1 <- colnames(fread("C:/Users/aa006/Desktop/3rd Place Soulution/train_ver2.csv", select=25:48, nrows=0))[-c(1,2,10,11)]
 product.list <-product.list1[1]
 
 for(product in product.list) {
   
-  print(product)
-#P.S.7  
+  #print(product)
+#"ind_cco_fin_ult1"只抓"2015-12-28"，"ind_reca_fin_ult1"只抓 "2015-06-28"剩下抓 "2016-05-28"。
+  
   if(product == "ind_cco_fin_ult1") {
     train.date <- "2015-12-28"
   } else if(product == "ind_reca_fin_ult1") {
@@ -168,6 +183,8 @@ for(product in product.list) {
   data.1 <- fread(paste0("C:/Users/aa006/Desktop/3rd Place Soulution/train_", train.date, ".csv"), colClasses=c(indrel_1mes="character", conyuemp="character"))
   data.2 <- fread(paste0("C:/Users/aa006/Desktop/3rd Place Soulution/count_", train.date, ".csv"))
   data.train <- cbind(data.1, data.2)
+  
+#當train.date= "2016-05-28"時，用2016-04-28作為驗證(val)，剩下的都用2016-05-28驗證(val)，2016-06-28測試(test)。  
   
   if(train.date == "2016-05-28") {
     data.1 <- fread("C:/Users/aa006/Desktop/3rd Place Soulution/train_2016-04-28.csv", colClasses=c(indrel_1mes="character", conyuemp="character"))
@@ -185,11 +202,15 @@ for(product in product.list) {
   rm(data.1)
   rm(data.2)
   gc()
-#P.S.8  
+  
+#取出前一個月沒有購買的該產品的客戶。
+  
   data.train <- data.train[data.train[[paste0(product,"_last")]] == 0]
   data.val <- data.val[data.val[[paste0(product,"_last")]] == 0]
   data.test <- data.test[data.test[[paste0(product,"_last")]] == 0]
-  
+ 
+#ind_actividad_cliente_from_to，將前一個月與當月的ind_actividad_cliente(是否活躍)合在一起當變數(例如前一個月1，當月1 變成11)。  
+   
   data.train$ind_actividad_cliente_from_to <- paste(data.train$ind_actividad_cliente_last, data.train$ind_actividad_cliente)
   data.val$ind_actividad_cliente_from_to <- paste(data.val$ind_actividad_cliente_last, data.val$ind_actividad_cliente)
   data.test$ind_actividad_cliente_from_to <- paste(data.test$ind_actividad_cliente_last, data.test$ind_actividad_cliente)
@@ -198,6 +219,8 @@ for(product in product.list) {
   data.val$tiprel_1mes_from_to <- paste(data.val$tiprel_1mes_last, data.val$tiprel_1mes)
   data.test$tiprel_1mes_from_to <- paste(data.test$tiprel_1mes_last, data.test$tiprel_1mes)
 
+#把前一個月的欄位拿掉。 
+  
   data.train[, ind_actividad_cliente_last:=NULL]
   data.val[, ind_actividad_cliente_last:=NULL]
   data.test[, ind_actividad_cliente_last:=NULL]
@@ -206,9 +229,13 @@ for(product in product.list) {
   data.val[, tiprel_1mes_last:=NULL]
   data.test[, tiprel_1mes_last:=NULL]
   
+#n_products_last 找出前一個月20項商品的持有狀況，利用apply進行橫排(每一客戶)加總，但test欄位數有差異所以位置不一樣!!
+  
   data.train$n_products_last <- apply(data.train[, (1:20)+20+20, with=FALSE], 1, sum)
   data.val$n_products_last <- apply(data.val[, (1:20)+20+20, with=FALSE], 1, sum)
   data.test$n_products_last <- apply(data.test[, (1:20)+20, with=FALSE], 1, sum)
+  
+#products_last先產生一個空欄位，再將前一個月的20個商品串成一串 例如(10000010000000010000)。
   
   data.train$products_last <- ""
   data.val$products_last <- ""
@@ -219,8 +246,8 @@ for(product in product.list) {
     data.test$products_last <- paste0(data.test$products_last, data.test[[j+20]])
   }
   
-  # exp.var去除年月、客代欄位，數值型變數不處理，類別型的變數根據二元與名目有不同的處理方式。
-  # 將變數為character挑出來，進行factor的轉換，如果是2分類的在第一個迴圈，將train、val、test先合再一起做運算，levels[1]<-0，levels[2]<-1，算完再分開來。
+# exp.var去除年月、客代欄位，數值型變數不處理，類別型的變數根據二元與名目有不同的處理方式。
+# 將變數為character挑出來，進行factor的轉換，如果是2分類的在第一個迴圈，將train、val、test先合再一起做運算，levels[1]<-0，levels[2]<-1，算完再分開來。
   
   exp.var <- colnames(data.test)[-(1:2)]
   for(var in exp.var) {
@@ -234,9 +261,9 @@ for(product in product.list) {
         data.test[[var]] <- temp[(nrow(data.train)+nrow(data.val)+1):length(temp)]
       } else {
         
-  # replace with target mean作者的說明是說用目標平均去替換覺得比 index of the lexicographic order(字典序)的效果來的好
-  # 讀入train的多類別變數，並將本次迴圈的Y商品命名為target，利用此變數將多類別的變數進行轉換，利用目標在每個類別下有1無0的去計算在每個類別下的平均。
-        # 再將VAL和test裡面相同變數也進行match
+# replace with target mean作者的說明是說用目標平均去替換覺得比 index of the lexicographic order(字典序)的效果來的好
+# 讀入train的多類別變數，並將本次迴圈的Y商品命名為target，利用此變數將多類別的變數進行轉換，利用目標在每個類別下有1無0的去計算在每個類別下的平均。
+# 再將VAL和test裡面相同變數也進行match
         
         data.temp <- data.train[, c(var, product), with=FALSE]
         colnames(data.temp)[ncol(data.temp)] <- "target"
@@ -244,7 +271,7 @@ for(product in product.list) {
         data.val[[var]] <- target.mean$target[match(data.val[[var]], target.mean[[var]])]
         data.test[[var]] <- target.mean$target[match(data.test[[var]], target.mean[[var]])]
         
-   #產生一個NA列，只抽原本的後面數間隔4個數取1/4的資料去計算target的平均，對應到從前面數的1/4的類別值塞入平均值
+#產生一個NA列，只抽原本的後面數間隔4個數取1/4的資料去計算target的平均，對應到從前面數的1/4的類別值塞入平均值
         
         temp <- rep(NA, nrow(data.train))
         for(j in 1:4) {
@@ -281,7 +308,14 @@ for(product in product.list) {
   
   gc()
   
-#P.S.9
+# P.S
+# nrounds： 幾棵樹
+# etal： 預測為0.3，介於0 to 1，step size shrinkage(步長收縮)用于防止過度配適，在每一步boosting step後，可以直接獲得新features的權重，在縮小特徵權重可以讓boosting更保守，越小表示越robust。
+# max_depth：預設為6，介於1 to 無限大，用來指定樹的最大深度。
+# min_child_weight：預設為1，用來指定子節點的minimum sum of instance weight(hessian)，在樹分支的過程，葉節點的sum of instance weight小於此參數，就會放棄此分支，在線性回歸模型上，指的就是每個節點所需的最小個數，，數字越大表示越保守。
+# objective：目標函數，在此選擇"binary:logistic"邏輯回歸損失函數進行二元分類。
+# eval_metric：設定驗證資料的估計指標，會根據objective進行預設，這裡使用AUC (area under curve score 曲線下面積值)。  
+# base_score： 全域 bias需要指定全部instances的起始預測分數。
   
   nrounds <- 1000
   early_stopping_round <- 50
@@ -322,18 +356,11 @@ for(product in product.list) {
 
 ```
 
-P.S.9 xgb的參數設定  可參考[XGB參數](https://www.analyticsvidhya.com/blog/2016/01/xgboost-algorithm-easy-steps/) ，[XGB參數2](https://github.com/dmlc/xgboost/blob/master/doc/parameter.md)。
-  (1) nrounds： 幾棵樹
-  (2) etal： 預測為0.3介於0~1，step size shrinkage(步長收縮)用于防止過度配適，在每一步boosting step後，可以直接獲得新features的權重，在縮小特徵權重可以讓boosting更保守，越小表示越robust。
-  (3) max_depth：預設為6介於1~無限大，用來指定樹的最大深度。
-  (4) min_child_weight：預設為1，用來指定子節點的minimum sum of instance weight(hessian)，在樹分支的過程，葉節點的sum of instance weight小於此參數，就會放棄此分支，在線性回歸模型上，指的就是每個節點所需的最小個數，，數字越大表示越保守。
-  (5) objective：目標函數，在此選擇"binary:logistic"邏輯回歸損失函數進行二元分類。
-  (6)eval_metric：設定驗證資料的估計指標，會根據objective進行預設，這裡使用AUC (area under curve score 曲線下面積值)。  
- (7)base_score： 全域 bias需要指定全部instances的起始預測分數。
+P.S xgb的參數設定  可參考[XGB參數](https://www.analyticsvidhya.com/blog/2016/01/xgboost-algorithm-easy-steps/) ，[XGB參數2](https://github.com/dmlc/xgboost/blob/master/doc/parameter.md)。
+
   
 ```{r, message=FALSE}
-data3 <-fread("C:/Users/aa006/Desktop/3rd Place Soulution/validation_ind_cder_fin_ult1_2016-05-28.csv", header = T)
-head(data3)
+#單樣商品的預測結果。
 data4 <-fread("C:/Users/aa006/Desktop/3rd Place Soulution/submission_ind_cder_fin_ult1_2016-05-28.csv", header = T)
 head(data4)
 ```
