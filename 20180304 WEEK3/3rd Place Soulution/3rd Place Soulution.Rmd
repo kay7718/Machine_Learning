@@ -30,7 +30,7 @@ knitr::opts_chunk$set(echo = TRUE)
   (7) 20個特徵：20個商品直到預測前一個月時連續未持有的月份數。<br>
   
 名詞解釋：<br>
-  1. 串聯(concatenation)：將某一個特徵變數這個月與前一個月用串聯的方式合併再一起。例如：如果某個月的“tiprel_1mes”=“A”，而上個月的“tiprel_1mes”=“I”，則它們的串聯後為新特徵為**"AI"**。<br>
+  1. 串聯(concatenation)：將某一個特徵變數這個月與前一個月用串聯的方式合併再一起。例如：如果某個月的“tiprel_1mes”=“A”，而上個月的“tiprel_1mes”=“I”，則它們的串聯後為新特徵為"AI"。<br>
   2. index狀態變更：0to0(前次無持有到這次無持有)，0to1(前次無持有到這次持有)，1to0(前次持有到這次無持有)和1to1(前次持有到這次持有)。<br>
 
 ## 程式碼說明 
@@ -46,19 +46,19 @@ library(xgboost)
 ## 1_make_data_v3
 
 ```{r, message=FALSE}
+#先排除沒有使用的變數fecha_alta,ult_fec_cli_1t,tipodom,cod_prov，還有四個使用固定預測機率為1^-10的商品(ind_ahor_fin_ult1,ind_aval_fin_ult1,ind_deco_fin_ult1,ind_deme_fin_ult1)也進行排除，並強制indrel_1mes、conyuemp為字元。
 data <- fread("C:/Users/aa006/Desktop/3rd Place Soulution/train_ver2.csv", drop=c(7,11,19,20,25,26,34,35), colClasses=c(indrel_1mes="character", conyuemp="character"))
 
-#先排除沒有使用的變數fecha_alta,ult_fec_cli_1t,tipodom,cod_prov，還有四個使用固定預測機率為1^-10的商品(ind_ahor_fin_ult1,ind_aval_fin_ult1,ind_deco_fin_ult1,ind_deme_fin_ult1)也進行排除，並強制indrel_1mes、conyuemp為字元。
 
+#取資料的年月出來，並去重複+加上要預測的"2016-06-28"進來。
 date.list <- c(unique(data$fecha_dato), "2016-06-28")
 print(date.list)
 
-#取資料的年月出來，並去重複+加上要預測的"2016-06-28"進來。
 
+#將商品列表出來 colnames商品名稱，ncol欄位數，因為商品的部分是從後面數過來順序排列，所以直接取最後的20欄。
 product.list <- colnames(data)[(ncol(data)-19):ncol(data)]
 print(product.list)
 
-#將商品列表出來 colnames商品名稱，ncol欄位數，因為商品的部分是從後面數過來順序排列，所以直接取最後的20欄。
 ```
 
 ```{r, message=FALSE}
@@ -86,11 +86,10 @@ for(i in c(17:length(date.list))) {
     #write.csv(out, paste0("test_", date.list[i], ".csv"), row.names=FALSE)
   }
 }
-
+#前一個月份的相關變數處理。
 data1 <-fread("C:/Users/aa006/Desktop/3rd Place Soulution/train_2016-05-28.csv", header = T)
 head(data1)
 
-#前一個月份的相關變數處理。
 ```
 
 
@@ -154,8 +153,11 @@ for(i in c(17:length(date.list))) {
 
 ```{r, message=FALSE}
 data2 <-fread("C:/Users/aa006/Desktop/3rd Place Soulution/count_2016-05-28.csv", header = T)
+
 select(filter(data,ncodpers==15889), fecha_dato,ncodpers,ind_cco_fin_ult1)
 select(data2[1],ind_cco_fin_ult1_00,ind_cco_fin_ult1_01,ind_cco_fin_ult1_10,ind_cco_fin_ult1_11,ind_cco_fin_ult1_0len)
+#共產生了100個變數。
+head(data2)
 ```
 
 ## 2_xgboost

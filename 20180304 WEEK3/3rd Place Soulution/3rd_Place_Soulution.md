@@ -12,7 +12,7 @@ KAGGLE競賽
 
 2.總共使用了142個特徵變數，分成幾個部分：<br> (1) 18個原始特徵變數：排除了fecha\_dato(資料年月)，ncodpers(客代)，fecha\_alta，ult\_fec\_cli\_1t，tipodom(地址類型)和cod\_prov(洲代碼)。<br> (2) 2個串聯(concatenation)欄位，當月與前一個月串聯：ind\_actividad\_cliente(是否活躍)、tiprel\_1mes。 (3) 20個特徵：20個商品**上個月**的持有狀況。<br> (4) 1個串聯(concatenation)欄位：將上個月的20個商品串成一個字元。<br> (5) 1個特徵：上個月20個商品購買的數量。<br> (6) 80個特徵：20個商品從最初到預測前一個月index狀態變更的計數(count)，共4種狀態變更\*20個商品。<br> (7) 20個特徵：20個商品直到預測前一個月時連續未持有的月份數。<br>
 
-名詞解釋：<br> 1. 串聯(concatenation)：將某一個特徵變數這個月與前一個月用串聯的方式合併再一起。例如：如果某個月的“tiprel\_1mes”=“A”，而上個月的“tiprel\_1mes”=“I”，則它們的串聯後為新特徵為**"AI"**。<br> 2. index狀態變更：0to0(前次無持有到這次無持有)，0to1(前次無持有到這次持有)，1to0(前次持有到這次無持有)和1to1(前次持有到這次持有)。<br>
+名詞解釋：<br> 1. 串聯(concatenation)：將某一個特徵變數這個月與前一個月用串聯的方式合併再一起。例如：如果某個月的“tiprel\_1mes”=“A”，而上個月的“tiprel\_1mes”=“I”，則它們的串聯後為新特徵為"AI"。<br> 2. index狀態變更：0to0(前次無持有到這次無持有)，0to1(前次無持有到這次持有)，1to0(前次持有到這次無持有)和1to1(前次持有到這次持有)。<br>
 
 程式碼說明
 ----------
@@ -31,6 +31,7 @@ library(xgboost)
 -----------------
 
 ``` r
+#先排除沒有使用的變數fecha_alta,ult_fec_cli_1t,tipodom,cod_prov，還有四個使用固定預測機率為1^-10的商品(ind_ahor_fin_ult1,ind_aval_fin_ult1,ind_deco_fin_ult1,ind_deme_fin_ult1)也進行排除，並強制indrel_1mes、conyuemp為字元。
 data <- fread("C:/Users/aa006/Desktop/3rd Place Soulution/train_ver2.csv", drop=c(7,11,19,20,25,26,34,35), colClasses=c(indrel_1mes="character", conyuemp="character"))
 ```
 
@@ -39,46 +40,51 @@ data <- fread("C:/Users/aa006/Desktop/3rd Place Soulution/train_ver2.csv", drop=
     Read 2.2% of 13647309 rows
     Read 4.5% of 13647309 rows
     Read 6.7% of 13647309 rows
-    Read 8.9% of 13647309 rows
+    Read 9.0% of 13647309 rows
     Read 11.4% of 13647309 rows
-    Read 13.7% of 13647309 rows
-    Read 15.9% of 13647309 rows
-    Read 18.7% of 13647309 rows
-    Read 21.5% of 13647309 rows
-    Read 24.5% of 13647309 rows
-    Read 26.8% of 13647309 rows
-    Read 30.0% of 13647309 rows
-    Read 33.2% of 13647309 rows
-    Read 36.3% of 13647309 rows
-    Read 39.3% of 13647309 rows
-    Read 42.4% of 13647309 rows
-    Read 45.4% of 13647309 rows
+    Read 13.6% of 13647309 rows
+    Read 15.7% of 13647309 rows
+    Read 18.0% of 13647309 rows
+    Read 20.2% of 13647309 rows
+    Read 22.3% of 13647309 rows
+    Read 24.7% of 13647309 rows
+    Read 27.0% of 13647309 rows
+    Read 29.3% of 13647309 rows
+    Read 31.5% of 13647309 rows
+    Read 33.7% of 13647309 rows
+    Read 35.6% of 13647309 rows
+    Read 38.0% of 13647309 rows
+    Read 40.2% of 13647309 rows
+    Read 42.6% of 13647309 rows
+    Read 44.7% of 13647309 rows
+    Read 46.3% of 13647309 rows
     Read 48.4% of 13647309 rows
-    Read 51.5% of 13647309 rows
-    Read 54.4% of 13647309 rows
-    Read 57.7% of 13647309 rows
-    Read 60.7% of 13647309 rows
-    Read 63.9% of 13647309 rows
-    Read 66.3% of 13647309 rows
-    Read 68.4% of 13647309 rows
-    Read 70.6% of 13647309 rows
-    Read 73.3% of 13647309 rows
-    Read 75.8% of 13647309 rows
+    Read 50.8% of 13647309 rows
+    Read 53.2% of 13647309 rows
+    Read 55.6% of 13647309 rows
+    Read 57.9% of 13647309 rows
+    Read 59.9% of 13647309 rows
+    Read 62.1% of 13647309 rows
+    Read 64.3% of 13647309 rows
+    Read 66.5% of 13647309 rows
+    Read 68.1% of 13647309 rows
+    Read 70.5% of 13647309 rows
+    Read 72.8% of 13647309 rows
+    Read 75.3% of 13647309 rows
     Read 78.0% of 13647309 rows
-    Read 80.2% of 13647309 rows
-    Read 82.3% of 13647309 rows
-    Read 84.6% of 13647309 rows
-    Read 86.8% of 13647309 rows
-    Read 89.2% of 13647309 rows
-    Read 91.7% of 13647309 rows
-    Read 93.9% of 13647309 rows
-    Read 95.9% of 13647309 rows
-    Read 97.6% of 13647309 rows
-    Read 13647309 rows and 40 (of 48) columns from 2.135 GB file in 00:00:52
+    Read 81.2% of 13647309 rows
+    Read 83.8% of 13647309 rows
+    Read 86.4% of 13647309 rows
+    Read 88.5% of 13647309 rows
+    Read 90.6% of 13647309 rows
+    Read 92.5% of 13647309 rows
+    Read 94.9% of 13647309 rows
+    Read 97.2% of 13647309 rows
+    Read 99.7% of 13647309 rows
+    Read 13647309 rows and 40 (of 48) columns from 2.135 GB file in 00:00:59
 
 ``` r
-#先排除沒有使用的變數fecha_alta,ult_fec_cli_1t,tipodom,cod_prov，還有四個使用固定預測機率為1^-10的商品(ind_ahor_fin_ult1,ind_aval_fin_ult1,ind_deco_fin_ult1,ind_deme_fin_ult1)也進行排除，並強制indrel_1mes、conyuemp為字元。
-
+#取資料的年月出來，並去重複+加上要預測的"2016-06-28"進來。
 date.list <- c(unique(data$fecha_dato), "2016-06-28")
 print(date.list)
 ```
@@ -89,8 +95,7 @@ print(date.list)
     ## [16] "2016-04-28" "2016-05-28" "2016-06-28"
 
 ``` r
-#取資料的年月出來，並去重複+加上要預測的"2016-06-28"進來。
-
+#將商品列表出來 colnames商品名稱，ncol欄位數，因為商品的部分是從後面數過來順序排列，所以直接取最後的20欄。
 product.list <- colnames(data)[(ncol(data)-19):ncol(data)]
 print(product.list)
 ```
@@ -102,10 +107,6 @@ print(product.list)
     ## [13] "ind_pres_fin_ult1" "ind_reca_fin_ult1" "ind_tjcr_fin_ult1"
     ## [16] "ind_valo_fin_ult1" "ind_viv_fin_ult1"  "ind_nomina_ult1"  
     ## [19] "ind_nom_pens_ult1" "ind_recibo_ult1"
-
-``` r
-#將商品列表出來 colnames商品名稱，ncol欄位數，因為商品的部分是從後面數過來順序排列，所以直接取最後的20欄。
-```
 
 ``` r
 ##### data 1: inner join with last month #####
@@ -132,13 +133,13 @@ for(i in c(17:length(date.list))) {
     #write.csv(out, paste0("test_", date.list[i], ".csv"), row.names=FALSE)
   }
 }
-
+#前一個月份的相關變數處理。
 data1 <-fread("C:/Users/aa006/Desktop/3rd Place Soulution/train_2016-05-28.csv", header = T)
 ```
 
     ## 
-    Read 38.8% of 926663 rows
-    Read 73.4% of 926663 rows
+    Read 34.5% of 926663 rows
+    Read 71.2% of 926663 rows
     Read 926663 rows and 62 (of 62) columns from 0.174 GB file in 00:00:04
 
 ``` r
@@ -259,10 +260,6 @@ head(data1)
     ## 6:                      0                    1
 
 ``` r
-#前一個月份的相關變數處理。
-```
-
-``` r
 ##### data 2: count the change of index #####
 #for(i in c(6,12:length(date.list))) {
 for(i in c(17:length(date.list))) {
@@ -324,10 +321,12 @@ data2 <-fread("C:/Users/aa006/Desktop/3rd Place Soulution/count_2016-05-28.csv",
 ```
 
     ## 
-    Read 30.2% of 926663 rows
-    Read 57.2% of 926663 rows
-    Read 83.1% of 926663 rows
-    Read 926663 rows and 100 (of 100) columns from 0.199 GB file in 00:00:05
+    Read 23.7% of 926663 rows
+    Read 42.1% of 926663 rows
+    Read 59.4% of 926663 rows
+    Read 78.8% of 926663 rows
+    Read 99.3% of 926663 rows
+    Read 926663 rows and 100 (of 100) columns from 0.199 GB file in 00:00:07
 
 ``` r
 select(filter(data,ncodpers==15889), fecha_dato,ncodpers,ind_cco_fin_ult1)
@@ -360,6 +359,250 @@ select(data2[1],ind_cco_fin_ult1_00,ind_cco_fin_ult1_01,ind_cco_fin_ult1_10,ind_
     ## 1:                   0                   0                   0
     ##    ind_cco_fin_ult1_11 ind_cco_fin_ult1_0len
     ## 1:                  15                     0
+
+``` r
+#共產生了100個變數。
+head(data2)
+```
+
+    ##    ind_cco_fin_ult1_00 ind_cco_fin_ult1_01 ind_cco_fin_ult1_10
+    ## 1:                   0                   0                   0
+    ## 2:                  15                   0                   0
+    ## 3:                   4                   1                   0
+    ## 4:                  15                   0                   0
+    ## 5:                   0                   0                   0
+    ## 6:                   0                   0                   0
+    ##    ind_cco_fin_ult1_11 ind_cco_fin_ult1_0len ind_cder_fin_ult1_00
+    ## 1:                  15                     0                   15
+    ## 2:                   0                    16                   15
+    ## 3:                  10                     0                   15
+    ## 4:                   0                    16                   15
+    ## 5:                  15                     0                   15
+    ## 6:                  15                     0                   15
+    ##    ind_cder_fin_ult1_01 ind_cder_fin_ult1_10 ind_cder_fin_ult1_11
+    ## 1:                    0                    0                    0
+    ## 2:                    0                    0                    0
+    ## 3:                    0                    0                    0
+    ## 4:                    0                    0                    0
+    ## 5:                    0                    0                    0
+    ## 6:                    0                    0                    0
+    ##    ind_cder_fin_ult1_0len ind_cno_fin_ult1_00 ind_cno_fin_ult1_01
+    ## 1:                     16                  15                   0
+    ## 2:                     16                   0                   0
+    ## 3:                     16                  10                   0
+    ## 4:                     16                  15                   0
+    ## 5:                     16                   7                   3
+    ## 6:                     16                  10                   0
+    ##    ind_cno_fin_ult1_10 ind_cno_fin_ult1_11 ind_cno_fin_ult1_0len
+    ## 1:                   0                   0                    16
+    ## 2:                   0                  15                     0
+    ## 3:                   1                   4                    11
+    ## 4:                   0                   0                    16
+    ## 5:                   4                   1                     6
+    ## 6:                   1                   4                    11
+    ##    ind_ctju_fin_ult1_00 ind_ctju_fin_ult1_01 ind_ctju_fin_ult1_10
+    ## 1:                   15                    0                    0
+    ## 2:                   15                    0                    0
+    ## 3:                   15                    0                    0
+    ## 4:                   15                    0                    0
+    ## 5:                   15                    0                    0
+    ## 6:                   15                    0                    0
+    ##    ind_ctju_fin_ult1_11 ind_ctju_fin_ult1_0len ind_ctma_fin_ult1_00
+    ## 1:                    0                     16                   15
+    ## 2:                    0                     16                   15
+    ## 3:                    0                     16                   15
+    ## 4:                    0                     16                   15
+    ## 5:                    0                     16                   15
+    ## 6:                    0                     16                   15
+    ##    ind_ctma_fin_ult1_01 ind_ctma_fin_ult1_10 ind_ctma_fin_ult1_11
+    ## 1:                    0                    0                    0
+    ## 2:                    0                    0                    0
+    ## 3:                    0                    0                    0
+    ## 4:                    0                    0                    0
+    ## 5:                    0                    0                    0
+    ## 6:                    0                    0                    0
+    ##    ind_ctma_fin_ult1_0len ind_ctop_fin_ult1_00 ind_ctop_fin_ult1_01
+    ## 1:                     16                   15                    0
+    ## 2:                     16                   15                    0
+    ## 3:                     16                   15                    0
+    ## 4:                     16                   15                    0
+    ## 5:                     16                   15                    0
+    ## 6:                     16                   15                    0
+    ##    ind_ctop_fin_ult1_10 ind_ctop_fin_ult1_11 ind_ctop_fin_ult1_0len
+    ## 1:                    0                    0                     16
+    ## 2:                    0                    0                     16
+    ## 3:                    0                    0                     16
+    ## 4:                    0                    0                     16
+    ## 5:                    0                    0                     16
+    ## 6:                    0                    0                     16
+    ##    ind_ctpp_fin_ult1_00 ind_ctpp_fin_ult1_01 ind_ctpp_fin_ult1_10
+    ## 1:                    0                    0                    0
+    ## 2:                    0                    0                    0
+    ## 3:                   15                    0                    0
+    ## 4:                   15                    0                    0
+    ## 5:                   15                    0                    0
+    ## 6:                   15                    0                    0
+    ##    ind_ctpp_fin_ult1_11 ind_ctpp_fin_ult1_0len ind_dela_fin_ult1_00
+    ## 1:                   15                      0                   15
+    ## 2:                   15                      0                   15
+    ## 3:                    0                     16                    1
+    ## 4:                    0                     16                   13
+    ## 5:                    0                     16                   13
+    ## 6:                    0                     16                    5
+    ##    ind_dela_fin_ult1_01 ind_dela_fin_ult1_10 ind_dela_fin_ult1_11
+    ## 1:                    0                    0                    0
+    ## 2:                    0                    0                    0
+    ## 3:                    1                    1                   12
+    ## 4:                    0                    1                    1
+    ## 5:                    0                    1                    1
+    ## 6:                    0                    1                    9
+    ##    ind_dela_fin_ult1_0len ind_ecue_fin_ult1_00 ind_ecue_fin_ult1_01
+    ## 1:                     16                   15                    0
+    ## 2:                     16                    0                    0
+    ## 3:                      0                    0                    0
+    ## 4:                     14                   15                    0
+    ## 5:                     14                    0                    0
+    ## 6:                      6                    0                    0
+    ##    ind_ecue_fin_ult1_10 ind_ecue_fin_ult1_11 ind_ecue_fin_ult1_0len
+    ## 1:                    0                    0                     16
+    ## 2:                    0                   15                      0
+    ## 3:                    0                   15                      0
+    ## 4:                    0                    0                     16
+    ## 5:                    0                   15                      0
+    ## 6:                    0                   15                      0
+    ##    ind_fond_fin_ult1_00 ind_fond_fin_ult1_01 ind_fond_fin_ult1_10
+    ## 1:                   15                    0                    0
+    ## 2:                   15                    0                    0
+    ## 3:                   15                    0                    0
+    ## 4:                   15                    0                    0
+    ## 5:                   15                    0                    0
+    ## 6:                   15                    0                    0
+    ##    ind_fond_fin_ult1_11 ind_fond_fin_ult1_0len ind_hip_fin_ult1_00
+    ## 1:                    0                     16                  15
+    ## 2:                    0                     16                  15
+    ## 3:                    0                     16                  15
+    ## 4:                    0                     16                  15
+    ## 5:                    0                     16                  15
+    ## 6:                    0                     16                  15
+    ##    ind_hip_fin_ult1_01 ind_hip_fin_ult1_10 ind_hip_fin_ult1_11
+    ## 1:                   0                   0                   0
+    ## 2:                   0                   0                   0
+    ## 3:                   0                   0                   0
+    ## 4:                   0                   0                   0
+    ## 5:                   0                   0                   0
+    ## 6:                   0                   0                   0
+    ##    ind_hip_fin_ult1_0len ind_plan_fin_ult1_00 ind_plan_fin_ult1_01
+    ## 1:                    16                   15                    0
+    ## 2:                    16                    0                    0
+    ## 3:                    16                   15                    0
+    ## 4:                    16                   15                    0
+    ## 5:                    16                   15                    0
+    ## 6:                    16                    0                    0
+    ##    ind_plan_fin_ult1_10 ind_plan_fin_ult1_11 ind_plan_fin_ult1_0len
+    ## 1:                    0                    0                     16
+    ## 2:                    0                   15                      0
+    ## 3:                    0                    0                     16
+    ## 4:                    0                    0                     16
+    ## 5:                    0                    0                     16
+    ## 6:                    0                   15                      0
+    ##    ind_pres_fin_ult1_00 ind_pres_fin_ult1_01 ind_pres_fin_ult1_10
+    ## 1:                   15                    0                    0
+    ## 2:                   15                    0                    0
+    ## 3:                   15                    0                    0
+    ## 4:                   15                    0                    0
+    ## 5:                   15                    0                    0
+    ## 6:                   15                    0                    0
+    ##    ind_pres_fin_ult1_11 ind_pres_fin_ult1_0len ind_reca_fin_ult1_00
+    ## 1:                    0                     16                   15
+    ## 2:                    0                     16                   15
+    ## 3:                    0                     16                    0
+    ## 4:                    0                     16                   15
+    ## 5:                    0                     16                    0
+    ## 6:                    0                     16                    0
+    ##    ind_reca_fin_ult1_01 ind_reca_fin_ult1_10 ind_reca_fin_ult1_11
+    ## 1:                    0                    0                    0
+    ## 2:                    0                    0                    0
+    ## 3:                    0                    0                   15
+    ## 4:                    0                    0                    0
+    ## 5:                    0                    0                   15
+    ## 6:                    0                    0                   15
+    ##    ind_reca_fin_ult1_0len ind_tjcr_fin_ult1_00 ind_tjcr_fin_ult1_01
+    ## 1:                     16                    5                    3
+    ## 2:                     16                    0                    0
+    ## 3:                      0                    0                    0
+    ## 4:                     16                   15                    0
+    ## 5:                      0                    0                    0
+    ## 6:                      0                    0                    0
+    ##    ind_tjcr_fin_ult1_10 ind_tjcr_fin_ult1_11 ind_tjcr_fin_ult1_0len
+    ## 1:                    4                    3                      1
+    ## 2:                    0                   15                      0
+    ## 3:                    0                   15                      0
+    ## 4:                    0                    0                     16
+    ## 5:                    0                   15                      0
+    ## 6:                    0                   15                      0
+    ##    ind_valo_fin_ult1_00 ind_valo_fin_ult1_01 ind_valo_fin_ult1_10
+    ## 1:                    0                    0                    0
+    ## 2:                   15                    0                    0
+    ## 3:                    0                    0                    0
+    ## 4:                    0                    0                    0
+    ## 5:                    0                    0                    0
+    ## 6:                    0                    0                    0
+    ##    ind_valo_fin_ult1_11 ind_valo_fin_ult1_0len ind_viv_fin_ult1_00
+    ## 1:                   15                      0                  15
+    ## 2:                    0                     16                  15
+    ## 3:                   15                      0                  15
+    ## 4:                   15                      0                  15
+    ## 5:                   15                      0                  15
+    ## 6:                   15                      0                  15
+    ##    ind_viv_fin_ult1_01 ind_viv_fin_ult1_10 ind_viv_fin_ult1_11
+    ## 1:                   0                   0                   0
+    ## 2:                   0                   0                   0
+    ## 3:                   0                   0                   0
+    ## 4:                   0                   0                   0
+    ## 5:                   0                   0                   0
+    ## 6:                   0                   0                   0
+    ##    ind_viv_fin_ult1_0len ind_nomina_ult1_00 ind_nomina_ult1_01
+    ## 1:                    16                 15                  0
+    ## 2:                    16                  0                  0
+    ## 3:                    16                 15                  0
+    ## 4:                    16                 15                  0
+    ## 5:                    16                  0                  0
+    ## 6:                    16                 15                  0
+    ##    ind_nomina_ult1_10 ind_nomina_ult1_11 ind_nomina_ult1_0len
+    ## 1:                  0                  0                   16
+    ## 2:                  0                 15                    0
+    ## 3:                  0                  0                   16
+    ## 4:                  0                  0                   16
+    ## 5:                  0                 15                    0
+    ## 6:                  0                  0                   16
+    ##    ind_nom_pens_ult1_00 ind_nom_pens_ult1_01 ind_nom_pens_ult1_10
+    ## 1:                   15                    0                    0
+    ## 2:                    0                    0                    0
+    ## 3:                   15                    0                    0
+    ## 4:                   15                    0                    0
+    ## 5:                    0                    0                    0
+    ## 6:                   15                    0                    0
+    ##    ind_nom_pens_ult1_11 ind_nom_pens_ult1_0len ind_recibo_ult1_00
+    ## 1:                    0                     16                 15
+    ## 2:                   15                      0                  0
+    ## 3:                    0                     16                  0
+    ## 4:                    0                     16                 15
+    ## 5:                   15                      0                  0
+    ## 6:                    0                     16                  0
+    ##    ind_recibo_ult1_01 ind_recibo_ult1_10 ind_recibo_ult1_11
+    ## 1:                  0                  0                  0
+    ## 2:                  0                  0                 15
+    ## 3:                  0                  0                 15
+    ## 4:                  0                  0                  0
+    ## 5:                  0                  0                 15
+    ## 6:                  0                  0                 15
+    ##    ind_recibo_ult1_0len
+    ## 1:                   16
+    ## 2:                    0
+    ## 3:                    0
+    ## 4:                   16
+    ## 5:                    0
+    ## 6:                    0
 
 2\_xgboost
 ----------
@@ -560,32 +803,37 @@ for(product in product.list) {
 ```
 
     ## 
-    Read 47.6% of 904294 rows
-    Read 84.0% of 904294 rows
+    Read 44.2% of 904294 rows
+    Read 78.5% of 904294 rows
     Read 904294 rows and 62 (of 62) columns from 0.170 GB file in 00:00:04
     ## 
-    Read 29.9% of 904294 rows
-    Read 56.4% of 904294 rows
-    Read 81.8% of 904294 rows
-    Read 904294 rows and 100 (of 100) columns from 0.191 GB file in 00:00:05
+    Read 27.6% of 904294 rows
+    Read 52.0% of 904294 rows
+    Read 75.2% of 904294 rows
+    Read 99.5% of 904294 rows
+    Read 904294 rows and 100 (of 100) columns from 0.191 GB file in 00:00:06
     ## 
-    Read 34.5% of 926663 rows
-    Read 66.9% of 926663 rows
+    Read 16.2% of 926663 rows
+    Read 43.2% of 926663 rows
+    Read 71.2% of 926663 rows
     Read 926663 rows and 62 (of 62) columns from 0.174 GB file in 00:00:05
     ## 
-    Read 30.2% of 926663 rows
-    Read 49.6% of 926663 rows
-    Read 71.2% of 926663 rows
-    Read 98.2% of 926663 rows
-    Read 926663 rows and 100 (of 100) columns from 0.199 GB file in 00:00:06
+    Read 19.4% of 926663 rows
+    Read 36.7% of 926663 rows
+    Read 54.0% of 926663 rows
+    Read 74.5% of 926663 rows
+    Read 95.0% of 926663 rows
+    Read 926663 rows and 100 (of 100) columns from 0.199 GB file in 00:00:07
     ## 
-    Read 59.2% of 929615 rows
-    Read 929615 rows and 42 (of 42) columns from 0.139 GB file in 00:00:03
+    Read 48.4% of 929615 rows
+    Read 83.9% of 929615 rows
+    Read 929615 rows and 42 (of 42) columns from 0.139 GB file in 00:00:04
     ## 
-    Read 31.2% of 929615 rows
-    Read 55.9% of 929615 rows
-    Read 79.6% of 929615 rows
-    Read 929615 rows and 100 (of 100) columns from 0.203 GB file in 00:00:05
+    Read 24.7% of 929615 rows
+    Read 45.2% of 929615 rows
+    Read 68.8% of 929615 rows
+    Read 94.7% of 929615 rows
+    Read 929615 rows and 100 (of 100) columns from 0.203 GB file in 00:00:06
     ## [1]  train-auc:0.930297  val-auc:0.883715 
     ## Multiple eval metrics are present. Will use val_auc for early stopping.
     ## Will train until val_auc hasn't improved in 50 rounds.
@@ -633,7 +881,7 @@ for(product in product.list) {
     ## Stopping. Best iteration:
     ## [359]    train-auc:0.983401  val-auc:0.962801
 
-P.S.9 xgb的參數設定 可參考[XGB參數](https://www.analyticsvidhya.com/blog/2016/01/xgboost-algorithm-easy-steps/) ，[XGB參數2](https://github.com/dmlc/xgboost/blob/master/doc/parameter.md)。
+P.S xgb的參數設定 可參考[XGB參數](https://www.analyticsvidhya.com/blog/2016/01/xgboost-algorithm-easy-steps/) ，[XGB參數2](https://github.com/dmlc/xgboost/blob/master/doc/parameter.md)。
 
 ``` r
 #單樣商品的預測結果。
