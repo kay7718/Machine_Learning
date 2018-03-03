@@ -9,29 +9,29 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## KAGGLE競賽
 這個競賽資料為西班牙Santander銀行的客戶樣態模擬資料，包含1.5年(2015-01-28 ~ 2016-05-28)的客戶基本資訊以及產品持有狀態，各欄位說明請見[資料描述](https://www.kaggle.com/c/santander-product-recommendation/data)。<br>
-競賽目標分析目標是根據這份資料，預測每個客戶在2016-06-28的時候，除了現已持有的商品外，去推薦客戶七項商品後會根據是否有購買作為驗證。<br>
+競賽目標分析目標是根據這份資料，預測每個客戶在2016-06-28的時候，除了現已持有的商品外，去推薦客戶七項商品後，根據是否有購買作為驗證。<br>
 
 這裡透過比賽完參賽者分享的程式碼進行說明，這個參賽者分享的程式碼是利用 2016-05-28 進行預測的，使用的演算法為XGBoost。 data產生出的結果Private Score：0.0312031。Public Score：0.0308417。<br>
 
-先進行簡單說明匯總：
-1.將要預測的24項商品分成三類：
-  (1)將只有少數人持有的商品(ind_ahor_fin_ult1, ind_aval_fin_ult1, ind_deco_fin_ult1 and ind_deme_fin_ult1)給定固定機率值**1^-10**。
-  (2)使用固定月份進行預測：ind_cco_fin_ult1僅用2015-12-28的資料進行預測、ind_reca_fin_ult1僅用2015-06-28的資料進行預測。
+先進行簡單說明匯總：<br>
+1.將要預測的24項商品分成三類：<br>
+  (1)將只有少數人持有的商品(ind_ahor_fin_ult1, ind_aval_fin_ult1, ind_deco_fin_ult1 and ind_deme_fin_ult1)給定固定機率值**1^-10**。<br>
+  (2)使用固定月份進行預測：ind_cco_fin_ult1僅用2015-12-28的資料進行預測、ind_reca_fin_ult1僅用2015-06-28的資料進行預測。<br>
   (3)其他18項商品分別預測2016-05-28, 2016-04-28, 2016-03-28, 2016-02-28, 2016-01-28和 2015-12-28這六個月，但後面跑XGBoost其實只有用到**2016-05-28**，並且在預測的部分，僅使用該月新持有該產品的客戶。<br>
-![](overview.PNG)  
-  
-2.總共使用了142個特徵變數，分成幾個部分：
-  (1) 18個原始特徵變數：排除了fecha_dato(資料年月)，ncodpers(客代)，fecha_alta，ult_fec_cli_1t，tipodom(地址類型)和cod_prov(洲代碼)。
+![](overview.png)  
+
+2.總共使用了142個特徵變數，分成幾個部分：<br>
+  (1) 18個原始特徵變數：排除了fecha_dato(資料年月)，ncodpers(客代)，fecha_alta，ult_fec_cli_1t，tipodom(地址類型)和cod_prov(洲代碼)。<br>
   (2) 2個串聯(concatenation)欄位，當月與前一個月串聯：ind_actividad_cliente(是否活躍)、tiprel_1mes。
-  (3) 20個特徵：20個商品**上個月**的持有狀況。
-  (4) 1個串聯(concatenation)欄位：將上個月的20個商品串成一個字元。
-  (5) 1個特徵：上個月20個商品購買的數量。
-  (6) 80個特徵：20個商品從最初到預測前一個月index狀態變更的計數(count)，共4種狀態變更*20個商品。
-  (7) 20個特徵：20個商品直到預測前一個月時連續未持有的月份數。
+  (3) 20個特徵：20個商品**上個月**的持有狀況。<br>
+  (4) 1個串聯(concatenation)欄位：將上個月的20個商品串成一個字元。<br>
+  (5) 1個特徵：上個月20個商品購買的數量。<br>
+  (6) 80個特徵：20個商品從最初到預測前一個月index狀態變更的計數(count)，共4種狀態變更*20個商品。<br>
+  (7) 20個特徵：20個商品直到預測前一個月時連續未持有的月份數。<br>
   
-名詞解釋：
-  1. 串聯(concatenation)：將某一個特徵變數這個月與前一個月用串聯的方式合併再一起。例如：如果某個月的“tiprel_1mes”=“A”，而上個月的“tiprel_1mes”=“I”，則它們的串聯後為新特徵為**"AI"**。
-  2. index狀態變更：0to0(前次無持有~這次無持有)，0to1(前次無持有~這次持有)，1到0(前次持有~這次無持有)和1到1(前次持有~這次持有)。
+名詞解釋：<br>
+  1. 串聯(concatenation)：將某一個特徵變數這個月與前一個月用串聯的方式合併再一起。例如：如果某個月的“tiprel_1mes”=“A”，而上個月的“tiprel_1mes”=“I”，則它們的串聯後為新特徵為**"AI"**。<br>
+  2. index狀態變更：0to0(前次無持有到這次無持有)，0to1(前次無持有到這次持有)，1to0(前次持有到這次無持有)和1to1(前次持有到這次持有)。<br>
 
 ## 程式碼說明 
   將程式碼分成**三個部分**，分別做說明：
@@ -48,12 +48,14 @@ library(xgboost)
 ```{r, message=FALSE}
 data <- fread("C:/Users/aa006/Desktop/3rd Place Soulution/train_ver2.csv", drop=c(7,11,19,20,25,26,34,35), colClasses=c(indrel_1mes="character", conyuemp="character"))
 date.list <- c(unique(data$fecha_dato), "2016-06-28")
+print(date.list)
 product.list <- colnames(data)[(ncol(data)-19):ncol(data)]
+print(product.list)
 ```
 
-1. 先排除沒有使用的變數fecha_alta, ult_fec_cli_1t, tipodom,cod_prov，還有四個使用固定預測機率為1^-10的商品(ind_ahor_fin_ult1, ind_aval_fin_ult1, ind_deco_fin_ult1, ind_deme_fin_ult1)也進行排除，並強制indrel_1mes、conyuemp為字元。
-2. 取資料的年月出來，並去重複+加上要預測的"2016-06-28"進來。
-3. 將商品列表出來 colnames商品名稱，ncol欄位數，因為商品的部分是從後面數過來順序排列，所以直接取最後的20欄。
+1. 先排除沒有使用的變數fecha_alta, ult_fec_cli_1t, tipodom,cod_prov，還有四個使用固定預測機率為1^-10的商品(ind_ahor_fin_ult1, ind_aval_fin_ult1, ind_deco_fin_ult1, ind_deme_fin_ult1)也進行排除，並強制indrel_1mes、conyuemp為字元。<br>
+2. 取資料的年月出來，並去重複+加上要預測的"2016-06-28"進來。<br>
+3. 將商品列表出來 colnames商品名稱，ncol欄位數，因為商品的部分是從後面數過來順序排列，所以直接取最後的20欄。<br>
 
 ```{r, message=FALSE}
 ##### data 1: inner join with last month #####
@@ -75,11 +77,11 @@ for(i in c(17:length(date.list))) {
   }
 }
 data1 <-fread("C:/Users/aa006/Desktop/3rd Place Soulution/train_2016-05-28.csv", header = T)
-print(data1,topn=10)
+head(data1)
 ```
-P.S.1 i取6,12,13,14,15,16,17,18，表示在這迴圈中處理這幾個月，"2015-06-28" "2015-12-28" "2016-01-28" "2016-02-28" "2016-03-28" "2016-04-28" "2016-05-28" "2016-06-28"這幾個月的資料。
-P.S.2 除了最後一個要預測的月份，根據客代去merge前一個月的值，取出前一個月的ind_actividad_cliente(是否活躍)、tiprel_1mes(月初的客戶關係類型)、20項商品這些欄位並且加上_last的后綴。
-P.S.3 最後要預測的月份，利用test資料集，排除沒有使用的變數fecha_alta, ult_fec_cli_1t, tipodom, cod_prov，後照上面一樣的處理方式，差別在不同的資料來源。
+P.S.1 i取6,12,13,14,15,16,17,18，表示在這迴圈中處理這幾個月，"2015-06-28" "2015-12-28" "2016-01-28" "2016-02-28" "2016-03-28" "2016-04-28" "2016-05-28" "2016-06-28"這幾個月的資料。<br>
+P.S.2 除了最後一個要預測的月份，根據客代去merge前一個月的值，取出前一個月的ind_actividad_cliente(是否活躍)、tiprel_1mes(月初的客戶關係類型)、20項商品這些欄位並且加上_last的后綴。<br>
+P.S.3 最後要預測的月份，利用test資料集，排除沒有使用的變數fecha_alta, ult_fec_cli_1t, tipodom, cod_prov，後照上面一樣的處理方式，差別在不同的資料來源。<br>
 
 
 ```{r, message=FALSE}
@@ -119,30 +121,30 @@ for(i in c(17:length(date.list))) {
   #write.csv(out[, -1, with=FALSE], paste0("count_", date.list[i], ".csv"), quote=FALSE, row.names=FALSE)
 }
 data2 <-fread("C:/Users/aa006/Desktop/3rd Place Soulution/count_2016-05-28.csv", header = T)
-print(data2,topn=10)
+head(data2)
 ```
-P.S.4 (1) i取6,12,13,14,15,16,17,18，表示在這迴圈中處理這幾個月，"2015-06-28" "2015-12-28" "2016-01-28" "2016-02-28" "2016-03-28" "2016-04-28" "2016-05-28" "2016-06-28"這幾個月的資料。
-    (2) if取出當月與前一個月的客代相同的客代，除了最後一個要預測的月份，根據客代去merge前一個月的客代，要預測的月份則是利用test資料集，取客代出來。
+P.S.4 (1) i取6,12,13,14,15,16,17,18，表示在這迴圈中處理這幾個月，"2015-06-28" "2015-12-28" "2016-01-28" "2016-02-28" "2016-03-28" "2016-04-28" "2016-05-28" "2016-06-28"這幾個月的資料。<br>
+    (2) if取出當月與前一個月的客代相同的客代，除了最後一個要預測的月份，根據客代去merge前一個月的客代，要預測的月份則是利用test資料集，取客代出來。<br>
     
-P.S.5 (1)找出前一個月以前到最初(1~i-1)的月份、客代、產品。
-    (2)根據客代 、年月的順序排序。
-    (3)根據該期與該期減一期去看持有某一項產品的狀態，分成四個欄位(00，01，10，11)，給定TURE、FALSE。
-    (4)因為每個客戶不是都從一開始就進來，所以要補0。
-    (5)根據客代分別加總四個狀態的值。
+P.S.5 (1)找出前一個月以前到最初(1~i-1)的月份、客代、產品。<br>
+    (2)根據客代 、年月的順序排序。<br>
+    (3)根據該期與該期減一期去看持有某一項產品的狀態，分成四個欄位(00，01，10，11)，給定TURE、FALSE。<br>
+    (4)因為每個客戶不是都從一開始就進來，所以要補0。<br>
+    (5)根據客代分別加總四個狀態的值。<br>
     
-P.S.6 先加了一個_0len的欄位，裡面都先放0，再跑迴圈，計算出連續未持有的月份數。
+P.S.6 先加了一個_0len的欄位，裡面都先放0，再跑迴圈，計算出連續未持有的月份數。<br>
 
 
 ## 2_xgboost
-P.S.7 (1)"ind_cco_fin_ult1"只抓"2015-12-28"，"ind_reca_fin_ult1"只抓 "2015-06-28"剩下抓 "2016-05-28"。
-    (2)當train.date= "2016-05-28"時，用2016-04-28作為驗證(val)，剩下的都用2016-05-28驗證(val)，2016-06-28測試(test)。
+P.S.7 (1)"ind_cco_fin_ult1"只抓"2015-12-28"，"ind_reca_fin_ult1"只抓 "2015-06-28"剩下抓 "2016-05-28"。<br>
+    (2)當train.date= "2016-05-28"時，用2016-04-28作為驗證(val)，剩下的都用2016-05-28驗證(val)，2016-06-28測試(test)。<br>
     
-P.S.8 (1)取出前一個月沒有購買的該產品的客戶。
-    (2)ind_actividad_cliente_from_to，將前一個月與當月的ind_actividad_cliente(是否活躍)合在一起當變數(例如前一個月1，當月1 變成11)。
-    (3)tiprel_1mes_from_to，將前一個月與當月的tiprel_1mes(月初的客戶關係類型)合在一起。
-    (4)將ind_actividad_cliente_last、tiprel_1mes_last轉換為NULL，將變數移除。
-    (5)n_products_last 找出前一個月20項商品的持有狀況，利用apply進行橫排(每一客戶)加總，但test欄位數有差異所以位置不一樣!!
-    (6)$products_last先產生一個空欄位，再將前一個月的20個商品串成一串 例如(10000010000000010000)。
+P.S.8 (1)取出前一個月沒有購買的該產品的客戶。<br>
+    (2)ind_actividad_cliente_from_to，將前一個月與當月的ind_actividad_cliente(是否活躍)合在一起當變數(例如前一個月1，當月1 變成11)。<br>
+    (3)tiprel_1mes_from_to，將前一個月與當月的tiprel_1mes(月初的客戶關係類型)合在一起。<br>
+    (4)將ind_actividad_cliente_last、tiprel_1mes_last轉換為NULL，將變數移除。<br>
+    (5)n_products_last 找出前一個月20項商品的持有狀況，利用apply進行橫排(每一客戶)加總，但test欄位數有差異所以位置不一樣!!<br>
+    (6)$products_last先產生一個空欄位，再將前一個月的20個商品串成一串 例如(10000010000000010000)。<br>
 
 
 ```{r, message=FALSE}
@@ -331,9 +333,9 @@ P.S.9 xgb的參數設定  可參考[XGB參數](https://www.analyticsvidhya.com/b
   
 ```{r, message=FALSE}
 data3 <-fread("C:/Users/aa006/Desktop/3rd Place Soulution/validation_ind_cder_fin_ult1_2016-05-28.csv", header = T)
-print(data3,topn=10)
+head(data3)
 data4 <-fread("C:/Users/aa006/Desktop/3rd Place Soulution/submission_ind_cder_fin_ult1_2016-05-28.csv", header = T)
-print(data4,topn=10)
+head(data4)
 ```
 
 ## 3_make_submission
@@ -409,7 +411,7 @@ for(i in 2:7) {
 #write.csv(submission[, .(ncodpers, added_products)], file.name, quote=FALSE, row.names=FALSE)
 
 data5 <-fread("C:/Users/aa006/Desktop/3rd Place Soulution/submission.csv", header = T)
-print(data5,topn=10)
+head(data5)
 
 ```
 
